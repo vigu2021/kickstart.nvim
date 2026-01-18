@@ -5,3 +5,12 @@ nvim
 
 spell/
 lazy-lock.json
+# Cache / state
+.undo/
+.swap/
+.backup/
+.session/
+.shada/
+
+# OS files
+.DS_Store

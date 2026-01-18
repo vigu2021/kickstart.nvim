@@ -1,5 +1,4 @@
 --[[
-
 =====================================================================
 ==================== READ THIS BEFORE CONTINUING ====================
 =====================================================================
@@ -17,11 +16,8 @@
 ========       /:::========|  |==hjkl==:::\  \ required \    ========
 ========      '""""""""""""'  '""""""""""""'  '""""""""""'   ========
 ========                                                     ========
-=====================================================================
-=====================================================================
-
+==========================================================================================================================================
 What is Kickstart?
-
   Kickstart.nvim is *not* a distribution.
 
   Kickstart.nvim is a starting point for your own configuration.
@@ -127,7 +123,6 @@ vim.o.undofile = true
 -- Case-insensitive searching UNLESS \C or one or more capital letters in the search term
 vim.o.ignorecase = true
 vim.o.smartcase = true
-
 -- Keep signcolumn on by default
 vim.o.signcolumn = 'yes'
 
@@ -152,6 +147,12 @@ vim.o.splitbelow = true
 vim.o.list = true
 vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
 
+-- Indent settings (4 spaces)
+vim.opt.expandtab = true -- Tab inserts spaces (not a real \t)
+vim.opt.tabstop = 4 -- how wide a \t looks
+vim.opt.shiftwidth = 4 -- >> and autoindent use 4
+vim.opt.softtabstop = 4 -- <Tab>/<BS> in insert mode feel like 4
+vim.opt.smarttab = true
 -- Preview substitutions live, as you type!
 vim.o.inccommand = 'split'
 
@@ -161,18 +162,41 @@ vim.o.cursorline = true
 -- Minimal number of screen lines to keep above and below the cursor.
 vim.o.scrolloff = 10
 
--- if performing an operation that would fail due to unsaved changes in the buffer (like `:q`),
+-- Add relative line numbers
+vim.opt.number = true
+vim.opt.relativenumber = true
+
 -- instead raise a dialog asking if you wish to save the current file(s)
+local function set_linenr_highlights()
+  -- current line number: blue
+  vim.api.nvim_set_hl(0, 'CursorLineNr', { fg = '#7dcfff', bold = true })
+
+  -- surrounding (relative) line numbers: yellow
+  vim.api.nvim_set_hl(0, 'LineNrAbove', { fg = '#e0af68' })
+  vim.api.nvim_set_hl(0, 'LineNrBelow', { fg = '#e0af68' })
+
+  -- (optional) all other line numbers also yellow
+  -- vim.api.nvim_set_hl(0, "LineNr", { fg = "yellow" })
+end
+
+set_linenr_highlights()
+vim.api.nvim_create_autocmd('ColorScheme', {
+  callback = set_linenr_highlights,
+})
+
 -- See `:help 'confirm'`
 vim.o.confirm = true
-
--- [[ Basic Keymaps ]]
---  See `:help vim.keymap.set()`
-
 -- Clear highlights on search when pressing <Esc> in normal mode
 --  See `:help hlsearch`
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
+-- Cut to Windows clipboard (works like an operator, needs a motion)
+vim.keymap.set({ 'n', 'v' }, 'm', '"+d', { noremap = true, silent = true })
+-- Cut whole line
+vim.keymap.set('n', 'mm', '"+dd', { noremap = true, silent = true })
+
+-- "jj" to escape insert mode.>'
+vim.keymap.set('i', 'jj', '<Esc>', { noremap = true, silent = true })
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
@@ -182,7 +206,6 @@ vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagn
 --
 -- NOTE: This won't work in all terminal emulators/tmux/etc. Try your own mapping
 -- or just use <C-\><C-n> to exit terminal mode
-vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
 -- TIP: Disable arrow keys in normal mode
 -- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
@@ -195,9 +218,16 @@ vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' }
 --
 --  See `:help wincmd` for a list of all window commands
 vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
-vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
+vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the right window' })
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+
+-- Ctrl-k then hjkl to move between splits
+-- Ctrl-k then hjkl to CREATE splits (and move into them)
+vim.keymap.set('n', '<C-k>l', '<C-w>v<C-w>l', { desc = 'Vsplit right + focus' })
+vim.keymap.set('n', '<C-k>j', '<C-w>s<C-w>j', { desc = 'Split below + focus' })
+vim.keymap.set('n', '<C-k>h', '<C-w>v<C-w>h', { desc = 'Vsplit + focus left' })
+vim.keymap.set('n', '<C-k>k', '<C-w>s<C-w>k', { desc = 'Split + focus up' })
 
 -- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
 -- vim.keymap.set("n", "<C-S-h>", "<C-w>H", { desc = "Move window to the left" })
@@ -248,7 +278,7 @@ rtp:prepend(lazypath)
 require('lazy').setup({
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
   'NMAC427/guess-indent.nvim', -- Detect tabstop and shiftwidth automatically
-
+  'svermeulen/vim-cutlass',
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
   -- keys can be used to configure plugin behavior/loading/etc.
@@ -382,44 +412,56 @@ require('lazy').setup({
       { 'nvim-tree/nvim-web-devicons', enabled = vim.g.have_nerd_font },
     },
     config = function()
-      -- Telescope is a fuzzy finder that comes with a lot of different things that
-      -- it can fuzzy find! It's more than just a "file finder", it can search
-      -- many different aspects of Neovim, your workspace, LSP, and more!
-      --
-      -- The easiest way to use Telescope, is to start by doing something like:
-      --  :Telescope help_tags
-      --
-      -- After running this command, a window will open up and you're able to
-      -- type in the prompt window. You'll see a list of `help_tags` options and
-      -- a corresponding preview of the help.
-      --
-      -- Two important keymaps to use while in Telescope are:
-      --  - Insert mode: <c-/>
-      --  - Normal mode: ?
-      --
-      -- This opens a window that shows you all of the keymaps for the current
-      -- Telescope picker. This is really useful to discover what Telescope can
-      -- do as well as how to actually do it!
+      local actions = require 'telescope.actions'
+      local action_state = require 'telescope.actions.state'
 
-      -- [[ Configure Telescope ]]
-      -- See `:help telescope` and `:help telescope.setup()`
+      local function open_in(cmd)
+        return function(prompt_bufnr)
+          local entry = action_state.get_selected_entry()
+          actions.close(prompt_bufnr)
+
+          -- make the split
+          vim.cmd(cmd)
+
+          -- open the selected file (works for find_files, etc.)
+          local path = entry.path or entry.filename or entry[1] or entry.value
+          if path then
+            vim.cmd('edit ' .. vim.fn.fnameescape(path))
+          end
+
+          -- if this is from live_grep, jump to the match
+          if entry.lnum then
+            vim.api.nvim_win_set_cursor(0, { entry.lnum, math.max((entry.col or 1) - 1, 0) })
+          end
+        end
+      end
+
       require('telescope').setup {
-        -- You can put your default mappings / updates / etc. in here
-        --  All the info you're looking for is in `:help telescope.setup()`
-        --
-        -- defaults = {
-        --   mappings = {
-        --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-        --   },
-        -- },
-        -- pickers = {}
+        defaults = {
+          mappings = {
+            i = {
+              ['<C-k>'] = false, -- IMPORTANT: remove Telescope's default <C-k>
+              ['<C-k>h'] = open_in 'leftabove vsplit', -- left
+              ['<C-k>l'] = open_in 'rightbelow vsplit', -- right
+              ['<C-k>k'] = open_in 'aboveleft split', -- up
+              ['<C-k>j'] = open_in 'belowright split', -- down
+            },
+            n = {
+              ['<C-k>'] = false, -- IMPORTANT: remove Telescope's default <C-k>
+              ['<C-k>h'] = open_in 'leftabove vsplit',
+              ['<C-k>l'] = open_in 'rightbelow vsplit',
+              ['<C-k>k'] = open_in 'aboveleft split',
+              ['<C-k>j'] = open_in 'belowright split',
+            },
+          },
+        },
+
         extensions = {
           ['ui-select'] = {
             require('telescope.themes').get_dropdown(),
           },
         },
       }
-
       -- Enable Telescope extensions if they are installed
       pcall(require('telescope').load_extension, 'fzf')
       pcall(require('telescope').load_extension, 'ui-select')
@@ -428,10 +470,10 @@ require('lazy').setup({
       local builtin = require 'telescope.builtin'
       vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
       vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
-      vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
+      vim.keymap.set('n', '<leader>ff', builtin.find_files, { desc = '[S]earch [F]iles' })
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
       vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
-      vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
+      vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
@@ -671,7 +713,7 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
-        -- clangd = {},
+        clangd = {},
         -- gopls = {},
         -- pyright = {},
         -- rust_analyzer = {},
@@ -876,30 +918,19 @@ require('lazy').setup({
     },
   },
 
-  { -- You can easily change to a different colorscheme.
-    -- Change the name of the colorscheme plugin below, and then
-    -- change the command in the config to whatever the name of that colorscheme is.
-    --
-    -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'folke/tokyonight.nvim',
-    priority = 1000, -- Make sure to load this before all the other start plugins.
-    config = function()
-      ---@diagnostic disable-next-line: missing-fields
-      require('tokyonight').setup {
-        styles = {
-          comments = { italic = false }, -- Disable italics in comments
-        },
-      }
-
-      -- Load the colorscheme here.
-      -- Like many other themes, this one has different styles, and you could load
-      -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
-    end,
-  },
-
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
+
+  {
+    'navarasu/onedark.nvim',
+    priority = 1000,
+    config = function()
+      require('onedark').setup {
+        style = 'darker', -- options: dark, darker, cool, deep, warm, warmer, light
+      }
+      require('onedark').load()
+    end,
+  },
 
   { -- Collection of various small independent plugins/modules
     'echasnovski/mini.nvim',
@@ -914,12 +945,15 @@ require('lazy').setup({
 
       -- Add/delete/replace surroundings (brackets, quotes, etc.)
       --
-      -- - saiw) - [S]urround [A]dd [I]nner [W]ord [)]Paren
-      -- - sd'   - [S]urround [D]elete [']quotes
-      -- - sr)'  - [S]urround [R]eplace [)] [']
-      require('mini.surround').setup()
+      require('mini.surround').setup {
+        mappings = {
+          add = 'ys',
+          delete = 'ds',
+          replace = 'cs',
+        },
+      }
 
-      -- Simple and easy statusline.
+      -- Simple and eay statusline.
       --  You could remove this setup call if you don't like it,
       --  and try some other statusline plugin
       local statusline = require 'mini.statusline'
@@ -974,9 +1008,9 @@ require('lazy').setup({
   --  Uncomment any of the lines below to enable them (you will need to restart nvim).
   --
   -- require 'kickstart.plugins.debug',
-  -- require 'kickstart.plugins.indent_line',
-  -- require 'kickstart.plugins.lint',
-  -- require 'kickstart.plugins.autopairs',
+  require 'kickstart.plugins.indent_line',
+  require 'kickstart.plugins.lint',
+  require 'kickstart.plugins.autopairs',
   -- require 'kickstart.plugins.neo-tree',
   -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
